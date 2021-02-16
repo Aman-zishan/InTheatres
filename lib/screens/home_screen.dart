@@ -9,6 +9,12 @@ import 'package:InTheatres/models_provider/models_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:InTheatres/components/animator.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:InTheatres/models/movie_response.dart';
+import 'package:InTheatres/blocs/movie_bloc.dart';
+import 'package:InTheatres/networking/api_response.dart';
+import 'movie_details.dart';
+
+
 
 class HomeScreen extends StatefulWidget {
 
@@ -23,6 +29,7 @@ final Shader linearGradient = LinearGradient(
 class _HomeScreenState extends State<HomeScreen>
 
     with SingleTickerProviderStateMixin {
+  MovieBloc _bloc;
 
   AnimationController _animationController;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -35,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen>
     _animationController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 800));
     super.initState();
+    _bloc = MovieBloc();
 
   }
 
@@ -50,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   dispose() {
     super.dispose();
+    _bloc.dispose();
     subscription.cancel();
   }
 
@@ -92,19 +101,30 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          Icon(FontAwesomeIcons.bars,color: Colors.white,size: 20),
+                        GestureDetector(
 
-
+                          child: SvgPicture.asset(
+                          "assets/images/bar.svg",
+                            height: 30,
+                      ),
+                        ),
 
                           AutoSizeText(
                             'IN THEATERS',
                             style: TextStyle(
                                 fontFamily: "Railway",
                                 color: Colors.white,
-                                fontSize: 17,
+                                fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 3
                             ),
                           ),
-                          Icon(FontAwesomeIcons.slidersH,color: Colors.white,size: 20,),
+                          GestureDetector(
+                            child: SvgPicture.asset(
+                              "assets/images/filter_search.svg",
+                              height: 35,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -117,33 +137,33 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
 
-            Container(
 
-              child: Padding(
-                padding:  EdgeInsets.only(bottom: size.height * 0.045),
-                child: Align(
-                  alignment: FractionalOffset.bottomRight,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      GestureDetector(
-                        onTap: (){_launchURL();},
-                        child: Text("© Developed by icodex",
-                          style: new TextStyle(
-                              fontSize: 15.0,
-                              fontWeight: FontWeight.bold,
-                              foreground: Paint()..shader = linearGradient),
-                        ),),
 
-                      ZAnimatedToggle(
-                        values: ['☀', '🌙'],
-                        onToggleCallback: (v) async {
-                          await themeProvider.toggleThemeData();
-                          setState(() {});
-                          changeThemeMode(themeProvider.isLightTheme);
-                        },
-                      ),],),
-                ),
+
+
+            RefreshIndicator(
+              onRefresh: () => _bloc.fetchMovieList(),
+              child: StreamBuilder<ApiResponse<List<Movie>>>(
+                stream: _bloc.movieListStream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    switch (snapshot.data.status) {
+                      case Status.LOADING:
+                        return Center(
+                          child: CircularProgressIndicator()
+                        );
+                        break;
+                      case Status.COMPLETED:
+                        return MovieList(movieList: snapshot.data.data);
+                        break;
+                      case Status.ERROR:
+                        return Text("bruh crashed");
+
+                        break;
+                    }
+                  }
+                  return Container();
+                },
               ),
             ),
 
@@ -151,8 +171,10 @@ class _HomeScreenState extends State<HomeScreen>
         ),
 
 
+
     );
   }
+
   //external links to form, developer contact etc.
   _launchURL() async {
     const url = 'https://www.instagram.com/_icodex_/';
@@ -163,5 +185,141 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 }
+
+class MovieList extends StatelessWidget {
+  final List<Movie> movieList;
+
+  const MovieList({Key key, this.movieList}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+
+    
+    Container textBuild(String text,Color colour, double size ) {
+
+
+      return Container(
+
+        padding: const EdgeInsets.only(left: 4),
+        child: AutoSizeText(
+          text,
+          style: TextStyle(fontSize: size, color: colour ,
+            fontFamily: "Roboto-Regular",
+            fontWeight: FontWeight.w500,
+            letterSpacing: 1.5,
+            
+            ),
+          softWrap: true,
+        ),
+      );
+    }
+
+    var size = MediaQuery.of(context).size;
+    final double itemHeight = (size.height - kToolbarHeight - 24) / 2;
+    final double itemWidth = size.width / 0.55;
+    return Container(
+      padding: EdgeInsets.only(top: size.height * 0.105),
+      child: GridView.builder(
+        itemCount: movieList.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 1,
+          childAspectRatio: (itemWidth / itemHeight),
+
+        ),
+        itemBuilder: (context, index) {
+
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => MovieDetail(movieList[index].id)));
+              },
+              child: Stack(
+                children:<Widget>[
+                  Card(
+
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4)
+                  ),
+                  elevation: 5,
+                  child: Row(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.all(7.5),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4.0),
+                          child: Image.network(
+                            'https://image.tmdb.org/t/p/w342${movieList[index].posterPath}',
+                            height: size.height * 0.20,
+
+                          ),
+                        ),
+                      ),
+                      Column(
+                        children: <Widget>[
+                          Stack(
+                            children: [
+                              if(movieList[index].voteAverage > 6)
+                            (
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 10),
+                                  child: Image.asset("assets/images/fresh.png", height: size.height * 0.085,fit: BoxFit.fill,),
+                                ))
+                              else(
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 10),
+                                  child: Image.asset("assets/images/rotten.png", height: size.height * 0.085,fit: BoxFit.fill,),
+                                )),
+                              Padding(padding: const EdgeInsets.only(top: 25),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  textBuild(movieList[index].title, Color.fromARGB(200, 41, 41, 41), 15),
+                              SizedBox(height: 5,),
+                                  textBuild(movieList[index].releaseDate.substring(0,4), Color.fromARGB(200, 70, 70, 70), 14),
+                                  SizedBox(height: 20,),
+                              Row(
+                              children: [
+                                Text("🍿",style: TextStyle(fontSize: 23),),
+                                textBuild(((movieList[index].voteAverage)*10).toString().substring(0,2)+"%", Colors.black, 16),
+                                SizedBox(width: 20,),
+                                Text("🍅",style: TextStyle(fontSize: 23),),
+                                textBuild("", Colors.black, 16)
+                              ],
+                              ),
+                                  SizedBox(height: 5,),
+                                  Row(
+                                    children: [
+                                      textBuild("Audience", Color.fromARGB(225, 131, 131, 131), 13),
+                                      SizedBox(width: 20,),
+                                      textBuild("Tomatometer", Color.fromARGB(225, 131, 131, 131), 13)
+                                    ],
+
+                                  )
+                              
+                                ],
+                              )
+          ),
+                            ],
+                          ),
+                       
+                        ],
+                      ),
+                      
+                    ],
+                  ),
+                ),
+          ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+
 
 
