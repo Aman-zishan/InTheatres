@@ -1,8 +1,10 @@
 <div align = "center">
 <img width="80%" src="poster.png"/>
+
+
+Flutter app to get rating, review and other info about movies and TV shows 🎥 (under development).
 </div>
 
-A simple flutter app to get rating, review and other info about movies 🎥.
 
 ### APIs used = <a href="http://www.omdbapi.com/">omdb API</a> & <a href="https://www.themoviedb.org/">themoviedb API</a>
 
