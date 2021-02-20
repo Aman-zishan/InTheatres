@@ -1,5 +1,5 @@
 <div align = "center">
-<img width="50%" src="poster.png"/>
+<img width="80%" src="poster.png"/>
 </div>
 
 A simple flutter app to get rating, review and other info about movies 🎥.
