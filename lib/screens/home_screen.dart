@@ -13,6 +13,9 @@ import 'package:InTheatres/models/movie_response.dart';
 import 'package:InTheatres/blocs/movie_bloc.dart';
 import 'package:InTheatres/networking/api_response.dart';
 import 'movie_details.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 
 
@@ -26,6 +29,37 @@ final Shader linearGradient = LinearGradient(
   colors: <Color>[Color.fromARGB(100, 13, 216,60), Color.fromARGB(100, 13, 209, 180), Color.fromARGB(100, 0, 212, 255)],
 ).createShader(Rect.fromLTWH(75.0, 50.0, 200.0, 70.0));
 
+Future<Tomato> fetchTomato(String movie) async {
+  final response =
+  await http.get('http://www.omdbapi.com/?t=$movie&apikey=82107fde');
+
+  if (response.statusCode == 200) {
+    // If the server did return a 200 OK response,
+    // then parse the JSON.
+    return Tomato.fromJson(jsonDecode(response.body));
+  } else {
+    // If the server did not return a 200 OK response,
+    // then throw an exception.
+    print('Failed to load Tomato');
+  }
+}
+
+class Tomato {
+
+  final String rating;
+  final String source;
+
+  Tomato({this.rating, this.source});
+
+  factory Tomato.fromJson(Map<String, dynamic> json) {
+
+    return Tomato(
+
+     rating: json['Ratings'][1]['Value'],
+      source: json['Ratings'][1]['Source'],
+    );
+  }
+}
 class _HomeScreenState extends State<HomeScreen>
 
     with SingleTickerProviderStateMixin {
@@ -35,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen>
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   var subscription;
   var connectionStatus;
+  Future<Tomato> futureTomato;
 
   @override
   void initState() {
@@ -43,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen>
         AnimationController(vsync: this, duration: Duration(milliseconds: 800));
     super.initState();
     _bloc = MovieBloc();
+    futureTomato = fetchTomato('');
 
   }
 
@@ -189,6 +225,7 @@ class _HomeScreenState extends State<HomeScreen>
 class MovieList extends StatelessWidget {
   final List<Movie> movieList;
 
+
   const MovieList({Key key, this.movieList}) : super(key: key);
 
   @override
@@ -284,8 +321,21 @@ class MovieList extends StatelessWidget {
                                 Text("🍿",style: TextStyle(fontSize: 23),),
                                 textBuild(((movieList[index].voteAverage)*10).toString().substring(0,2)+"%", Colors.black, 16),
                                 SizedBox(width: 20,),
-                                Text("🍅",style: TextStyle(fontSize: 23),),
-                                textBuild("", Colors.black, 16)
+                                Text("⭐",style: TextStyle(fontSize: 22),),
+                                FutureBuilder<Tomato>(
+                                future: fetchTomato(movieList[index].title),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return textBuild(snapshot.data.rating, Colors.black, 16);
+                                    } 
+
+                                    // By default, show a loading spinner.
+                                    else{
+                                      return textBuild("--", Colors.black, 16);
+                                    }
+                                  },
+                                ),
+
                               ],
                               ),
                                   SizedBox(height: 5,),
@@ -293,7 +343,20 @@ class MovieList extends StatelessWidget {
                                     children: [
                                       textBuild("Audience", Color.fromARGB(225, 131, 131, 131), 13),
                                       SizedBox(width: 20,),
-                                      textBuild("Tomatometer", Color.fromARGB(225, 131, 131, 131), 13)
+                                      FutureBuilder<Tomato>(
+                                        future: fetchTomato(movieList[index].title),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.hasData) {
+                                            return textBuild(snapshot.data.source, Color.fromARGB(225, 131, 131, 131), 13);
+                                          }
+
+                                          // By default, show a loading spinner.
+                                          else{
+                                            return textBuild("No rating available",Color.fromARGB(225, 131, 131, 131), 13);
+                                          }
+                                        },
+                                      ),
+                               
                                     ],
 
                                   )
