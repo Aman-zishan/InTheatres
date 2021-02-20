@@ -16,7 +16,7 @@ Trying to recreate UI designed by <a href="https://dribbble.com/shots/2784573-Ro
 <img width="50%" src="movie_review.png"/>
 </div>
 
-## *Please note that at this time we no longer support unauthorized use of our data (e.g. unofficial projects, non-user facing data integrations).*- rottentomatoes api developer website.
+### *Please note that at this time we no longer support unauthorized use of our data (e.g. unofficial projects, non-user facing data integrations).*- rottentomatoes api developer website.
 
 
 Hence i had to change the *tomatometer* UI element to rating section fetched from Omdb API.
