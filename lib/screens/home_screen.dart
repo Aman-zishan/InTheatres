@@ -283,7 +283,7 @@ class MovieList extends StatelessWidget {
                   child: Row(
                     children: <Widget>[
                       Padding(
-                        padding: const EdgeInsets.all(7.5),
+                        padding: const EdgeInsets.all(12),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(4.0),
                           child: Image.network(
